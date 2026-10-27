@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tekla Log Dashboard Pro</title>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- SheetJS for Excel -->
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #2d3748;
+}
+
+.container { max-width: 1400px; margin: 0 auto; }
+
+/* Header */
+.header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.header h1 {
+    font-size: 2.2em;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.btn-export {
+    background: #48bb78;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-export:hover {
+    background: #38a169;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+}
+
+/* Upload Section */
+.upload-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.file-input-wrapper input[type="file"] { display: none; }
+
+.file-input-label {
+    display: inline-block;
+    padding: 15px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.file-input-label:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.file-list {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.file-item {
+    background: #f7fafc;
+    padding: 15px;
+    border-radius: 12px;
+    border-left: 5px solid #667eea;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-info h4 { color: #2d3748; margin-bottom: 5px; font-size: 0.95em; }
+.file-info p { color: #718096; font-size: 0.85em; }
+
+.remove-btn {
+    background: #fc8181;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+}
+.remove-btn:hover { background: #f56565; }
+
+/* Filters */
+.filter-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.filter-group label {
+    display: block;
+    color: #4a5568;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.filter-group select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+}
+
+/* Stats & Cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    text-align: center;
+}
+
+.stat-card h3 { color: #718096; font-size: 0.9em; text-transform: uppercase; }
+.stat-card .value { font-size: 2em; font-weight: 700; color: #2d3748; margin-top: 5px; }
+
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.toggle-group {
+    background: #edf2f7;
+    padding: 5px;
+    border-radius: 8px;
+    display: flex;
+    gap: 5px;
+}
+
+.toggle-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: 600;
+    color: #718096;
+    transition: all 0.2s;
+}
+
+.toggle-btn.active {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+/* Table */
+.table-container {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    overflow-x: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+th {
+    background: #667eea;
+    color: white;
+    padding: 15px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+}
+
+td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #4a5568;
+}
+
+tr:hover td { background: #f7fafc; }
+
+.no-data {
+    text-align: center;
+    padding: 50px;
+    color: #718096;
+    background: white;
+    border-radius: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>📊 Tekla Plugin Dashboard</h1>
+            <p style="color: #718096;">Multi-file Analysis & Reporting</p>
+        </div>
+        <button class="btn-export" onclick="exportToExcel()">
+            📥 Download Detailed Report
+        </button>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <div class="file-input-wrapper">
+            <input type="file" id="fileInput" accept=".txt,.log,.json" multiple>
+            <label for="fileInput" class="file-input-label">📁 Add Log Files</label>
+        </div>
+        <div class="file-list" id="fileList"></div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section" id="filterSection" style="display: none;">
+        <h3 style="margin-bottom: 15px; color: #2d3748;">🔍 Filters</h3>
+        <div class="filter-grid">
+            <div class="filter-group">
+                <label>Year</label>
+                <select id="yearFilter"><option value="">All Years</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Month</label>
+                <select id="monthFilter"><option value="">All Months</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Day</label>
+                <select id="dayFilter"><option value="">All Days</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Level</label>
+                <select id="levelFilter"><option value="">All Levels</option></select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid" style="display: none;">
+        <div class="stat-card"><h3>Total Logs</h3><div class="value" id="totalLogs">0</div></div>
+        <div class="stat-card"><h3>Errors</h3><div class="value" id="errorCount" style="color:#e53e3e">0</div></div>
+        <div class="stat-card"><h3>Warnings</h3><div class="value" id="warningCount" style="color:#d69e2e">0</div></div>
+        <div class="stat-card"><h3>Active Users</h3><div class="value" id="uniqueUsers">0</div></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="card" id="chartCard" style="display: none;">
+        <div class="chart-header">
+            <h3>📈 Activity Timeline</h3>
+            <div class="toggle-group">
+                <button class="toggle-btn active" id="btnHour" onclick="setChartMode('hour')">Per Hour</button>
+                <button class="toggle-btn" id="btnMinute" onclick="setChartMode('minute')">Per Minute</button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="timeChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Summary Table -->
+    <div class="table-container" id="tableContainer" style="display: none;">
+        <h3 style="margin-bottom: 20px;">📋 User Activity Summary</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Total Number of Logs</th>
+                </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+        </table>
+    </div>
+
+    <div class="no-data" id="noData">
+        <h3>No Data Loaded</h3>
+        <p>Upload one or more log files to begin analysis.</p>
+    </div>
+</div>
+
+<script>
+// State Management
+let allLogs = []; 
+let fileRegistry = []; 
+let filteredLogs = [];
+let timeChartInstance = null;
+let currentChartMode = 'hour'; // 'hour' or 'minute'
+
+// DOM Elements
+const fileInput = document.getElementById('fileInput');
+const fileListEl = document.getElementById('fileList');
+
+// Event Listeners
+fileInput.addEventListener('change', handleFileUpload);
+['yearFilter', 'monthFilter', 'dayFilter', 'levelFilter'].forEach(id => {
+    document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+function handleFileUpload(e) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    let processed = 0;
+    
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const content = event.target.result.trim();
+            const fileId = Date.now() + Math.random();
+            
+            if (content) {
+                const lines = content.split('\n');
+                let validCount = 0;
+                
+                lines.forEach(line => {
+                    try {
+                        const log = JSON.parse(line);
+                        if (log.Timestamp && log.Level && log.Properties) {
+                            log._fileId = fileId;
+                            allLogs.push(log);
+                            validCount++;
+                        }
+                    } catch (err) {}
+                });
+
+                fileRegistry.push({
+                    id: fileId,
+                    name: file.name,
+                    size: formatSize(file.size),
+                    count: validCount
+                });
+            }
+            
+            processed++;
+            if (processed === files.length) {
+                updateDashboard();
+            }
+        };
+        reader.readAsText(file);
+    });
+    fileInput.value = '';
+}
+
+function removeFile(id) {
+    fileRegistry = fileRegistry.filter(f => f.id !== id);
+    allLogs = allLogs.filter(log => log._fileId !== id);
+    
+    renderFileList();
+    
+    if (allLogs.length === 0) {
+        resetDashboard();
+    } else {
+        updateDashboard();
+    }
+}
+
+function setChartMode(mode) {
+    currentChartMode = mode;
+    
+    // Update buttons
+    document.getElementById('btnHour').className = mode === 'hour' ? 'toggle-btn active' : 'toggle-btn';
+    document.getElementById('btnMinute').className = mode === 'minute' ? 'toggle-btn active' : 'toggle-btn';
+    
+    // Rebuild chart
+    buildTimeChart();
+}
+
+function updateDashboard() {
+    renderFileList();
+    populateFilters();
+    applyFilters();
+    
+    document.getElementById('filterSection').style.display = 'block';
+    document.getElementById('statsGrid').style.display = 'grid';
+    document.getElementById('chartCard').style.display = 'block';
+    document.getElementById('tableContainer').style.display = 'block';
+    document.getElementById('noData').style.display = 'none';
+}
+
+function resetDashboard() {
+    document.getElementById('filterSection').style.display = 'none';
+    document.getElementById('statsGrid').style.display = 'none';
+    document.getElementById('chartCard').style.display = 'none';
+    document.getElementById('tableContainer').style.display = 'none';
+    document.getElementById('noData').style.display = 'block';
+    allLogs = [];
+    fileRegistry = [];
+}
+
+function renderFileList() {
+    fileListEl.innerHTML = '';
+    fileRegistry.forEach(file => {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.innerHTML = `
+            <div class="file-info">
+                <h4>📄 ${file.name}</h4>
+                <p>${file.size} • ${file.count} logs</p>
+            </div>
+            <button class="remove-btn" onclick="removeFile(${file.id})">×</button>
+        `;
+        fileListEl.appendChild(div);
+    });
+}
+
+function formatSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function populateFilters() {
+    const years = [...new Set(allLogs.map(l => new Date(l.Timestamp).getFullYear()))].sort();
+    const months = [...new Set(allLogs.map(l => new Date(l.Timestamp).getMonth()))].sort();
+    const days = [...new Set(allLogs.map(l => new Date(l.Timestamp).getDate()))].sort();
+    const levels = [...new Set(allLogs.map(l => l.Level))].sort();
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    updateSelect('yearFilter', years);
+    updateSelect('monthFilter', months, m => monthNames[m]);
+    updateSelect('dayFilter', days);
+    updateSelect('levelFilter', levels);
+}
+
+function updateSelect(id, items, formatter = x => x) {
+    const select = document.getElementById(id);
+    const currentVal = select.value;
+    select.innerHTML = select.options[0].outerHTML;
+    items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item;
+        opt.textContent = formatter(item);
+        select.appendChild(opt);
+    });
+    if ([...select.options].some(o => o.value === currentVal)) {
+        select.value = currentVal;
+    }
+}
+
+function applyFilters() {
+    const year = document.getElementById('yearFilter').value;
+    const month = document.getElementById('monthFilter').value;
+    const day = document.getElementById('dayFilter').value;
+    const level = document.getElementById('levelFilter').value;
+
+    filteredLogs = allLogs.filter(log => {
+        const d = new Date(log.Timestamp);
+        if (year && d.getFullYear() != year) return false;
+        if (month !== "" && d.getMonth() != month) return false;
+        if (day && d.getDate() != day) return false;
+        if (level && log.Level !== level) return false;
+        return true;
+    });
+
+    // Sort by time descending
+    filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+
+    updateStats();
+    buildTimeChart();
+    buildSummaryTable();
+}
+
+function updateStats() {
+    document.getElementById('totalLogs').textContent = filteredLogs.length;
+    document.getElementById('errorCount').textContent = filteredLogs.filter(l => l.Level === 'ERROR').length;
+    document.getElementById('warningCount').textContent = filteredLogs.filter(l => l.Level === 'WARNING').length;
+    document.getElementById('uniqueUsers').textContent = new Set(filteredLogs.map(l => l.Properties.User)).size;
+}
+
+function buildTimeChart() {
+    const ctx = document.getElementById('timeChart').getContext('2d');
+    
+    const groups = {};
+    
+    filteredLogs.forEach(log => {
+        const d = new Date(log.Timestamp);
+        let key;
+        
+        if (currentChartMode === 'hour') {
+            // Group by Hour: YYYY-MM-DD HH:00
+            key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:00`;
+        } else {
+            // Group by Minute: YYYY-MM-DD HH:mm
+            key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+        
+        if (!groups[key]) groups[key] = 0;
+        groups[key]++;
+    });
+
+    const labels = Object.keys(groups).sort();
+    const data = labels.map(l => groups[l]);
+
+    if (timeChartInstance) timeChartInstance.destroy();
+
+    timeChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: `Actions Per ${currentChartMode === 'hour' ? 'Hour' : 'Minute'}`,
+                data: data,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 2,
+                pointRadius: currentChartMode === 'minute' ? 1 : 3, // Smaller points for minute view
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        maxTicksLimit: 15,
+                        maxRotation: 45
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f0f0f0' }
+                }
+            }
+        }
+    });
+}
+
+function buildSummaryTable() {
+    const tbody = document.getElementById('summaryBody');
+    tbody.innerHTML = '';
+    
+    // Calculate counts per user
+    const userCounts = {};
+    filteredLogs.forEach(log => {
+        const user = log.Properties.User || 'Unknown';
+        userCounts[user] = (userCounts[user] || 0) + 1;
+    });
+
+    // Convert to array and sort by count descending
+    const sortedUsers = Object.entries(userCounts).sort((a, b) => b[1] - a[1]);
+
+    if (sortedUsers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center">No logs match filters</td></tr>';
+        return;
+    }
+
+    sortedUsers.forEach(([user, count]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${user}</strong></td>
+            <td>${count}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function exportToExcel() {
+    if (filteredLogs.length === 0) {
+        alert("No data to export");
+        return;
+    }
+
+    // 1. Identify all unique plugins in the current filtered dataset
+    const allPlugins = [...new Set(filteredLogs.map(l => l.Properties.Plugin || 'Unknown'))].sort();
+
+    // 2. Build a map: User -> { Plugin: Count }
+    const userPluginMap = {};
+    
+    filteredLogs.forEach(log => {
+        const user = log.Properties.User || 'Unknown';
+        const plugin = log.Properties.Plugin || 'Unknown';
+        
+        if (!userPluginMap[user]) {
+            userPluginMap[user] = {};
+        }
+        
+        if (!userPluginMap[user][plugin]) {
+            userPluginMap[user][plugin] = 0;
+        }
+        
+        userPluginMap[user][plugin]++;
+    });
+
+    // 3. Construct the Excel Rows
+    const excelData = Object.keys(userPluginMap).map(user => {
+        const row = { "User": user };
+        let total = 0;
+        
+        // Add a column for every plugin found
+        allPlugins.forEach(plugin => {
+            const count = userPluginMap[user][plugin] || 0;
+            row[plugin] = count;
+            total += count;
+        });
+        
+        // Add Total column at the end
+        row["Total Logs"] = total;
+        
+        return row;
+    });
+
+    // 4. Create Worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // 5. Create Workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Plugin Usage Report");
+
+    // 6. Generate Filename
+    const dateStr = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `Tekla_Plugin_Usage_${dateStr}.xlsx`);
+}
+</script>
+
+</body>
+</html>
